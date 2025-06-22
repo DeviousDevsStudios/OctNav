@@ -1,22 +1,24 @@
 {
-  "name": "com.ddevs.octnav",
-  "displayName": "OctNav",
-  "version": "1.0.0",
-  "unity": "2017.1",
-  "description": "Octree based navigation system solution for AI agents",
-  "keywords": [
-    "utils"
-  ],
-  "category": "Utils",
-  "samples": {
-    "displayName": "Ai Agent Sample",
-    "description": "showcases how the AI agents path",
-    "path": "Samples~/AiTesting"
-  },
-  "type": "commonjs",
-  "author": {
-    "name": "OctNav",
-    "email": "deviousdevsstudio@gmail.com",
-    "url": "https://github.com/DeviousDevsStudios"
-  }
+    "name": "com.ddevs.octnav",
+    "displayName": "OctNav",
+    "version": "1.0.0",
+    "unity": "2017.1",
+    "description": "Octree based navigation system solution for AI agents",
+    "keywords": [
+        "utils"
+    ],
+    "category": "Utils",
+    "samples": [
+        {
+            "displayName": "Ai Agent Sample",
+            "description": "showcases how the AI agents path",
+            "path": "Samples~/AiTesting"
+        }
+    ],
+    "type": "commonjs",
+    "author": {
+        "name": "OctNav",
+        "email": "deviousdevsstudio@gmail.com",
+        "url": "https://github.com/DeviousDevsStudios"
+    }
 }
