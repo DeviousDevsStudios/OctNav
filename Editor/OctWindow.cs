@@ -131,6 +131,7 @@ namespace OctNav
                 };
                 rootVisualElement.Add(noVolumeLabel);
 
+            
                 Button createVolumeButton = new Button(() =>
                 {
                     allVolumes = new List<OctVolume>(FindObjectsByType<OctVolume>(FindObjectsSortMode.InstanceID));
@@ -145,6 +146,14 @@ namespace OctNav
 
                 return;
             }
+            Button RefreshVolumeButton = new Button(() =>
+            {
+                allVolumes = new List<OctVolume>(FindObjectsByType<OctVolume>(FindObjectsSortMode.InstanceID));
+                RefreshAllPanels();
+            })
+            { text = "Refresh" };
+            rootVisualElement.Add(RefreshVolumeButton);
+
 
             #region Volume Selector
             {
