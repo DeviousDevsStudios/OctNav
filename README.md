@@ -1,5 +1,5 @@
 
-![OctNav Window](https://cdn.discordapp.com/attachments/734864355992010792/1385949768320290906/image.png?ex=6857edce&is=68569c4e&hm=020b77609d2296e206c8c24911a2a2813c6d44884f33ab8ed3d5a5065c55a43e&)
+![OctNav Window](https://github.com/DeviousDevsStudios/OctNav/blob/main/SampleImages/OctWindowBuild.png)
 
 
 
@@ -7,7 +7,7 @@
 
 # Octree Navigation
 
-Install from package manager in Unity with `https://github.com/TheosCreation/OctNav.git`
+Install from package manager in Unity with `https://github.com/DeviousDevsStudios/OctNav.git`
 
 ## OctAgent Class Example
 

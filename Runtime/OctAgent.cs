@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using OctNav;
 
 namespace OctNav
 {
@@ -32,13 +31,18 @@ namespace OctNav
         [Header("Path Smoothing")]
         bool enableSmoothing = true;
         public float agentRadius = 0.5f;
+        [Tooltip("Enable raycast-based smoothing for path segments, if disabled will use a funelling technique instead with no at runtime physics checks.")]
         public bool enableRaycastSmoothing = true;
+        [Tooltip("How many smoothing points are created, or path resolution.")]
         public int splineSubdivisionCount = 8;
 
         [Header("Dynamic Repathing")]
-        public bool enableDynamicRepathing = true;
+        [Tooltip("Combines a next path with the current path.")]
+        public bool enableDynamicRepathing = false;
         public int nodesAwayBeforeRepath = 1;
         private bool isPreloadingNextPath = false;
+        [Tooltip("Goal of second combined path.")]
+        public Vector3? nextGoal = null;
 
         [Header("Velocity-Dependent Turning")]
         public float minTurnSpeedBoostVelocity = 0.5f; // Velocity below which boost starts
@@ -48,34 +52,53 @@ namespace OctNav
         public float snapTurnAngleThreshold = 60f; // Angle (degrees) beyond which an aggressive turn boost is applied
         public float snapTurnAdditionalFactor = 2.0f; // Additional multiplier for turn speed when angle is very large
 
-        [Header("Octree Information")]
+        [Header("Target Information")]
+        [Tooltip("The target Transform to follow. If null, will use manualDestination instead.")]
         public Transform target;
+        [Tooltip("If set, this will override the target and use this position as the destination.")]
+        public Vector3? manualDestination = null;
+        [Tooltip("Utilize for reading current path destination as a Vector3.")]
+        public Vector3? currentGoal => manualDestination.HasValue ? manualDestination : target != null ? (Vector3?)target.position : null;
 
         [Header("Pathfinding Settings")]
+        [Tooltip("The heuristic type used for A* pathfinding.")]
         public HeuristicType heuristicType = HeuristicType.Euclidean;
+        [Tooltip("If true, the agent will use the ground path instead of flying path.")]
         public bool walking = false;
+        [Tooltip("If true, the agent will use a straight path instead of A* pathfinding.")]
         public bool straightPath = false;
+        [Tooltip("If true, the agent will always try keep rotation upright.")]
         public bool stayUpright = true;
+        [Tooltip("If true, the agent will determine its rotaton")]
         public bool controlRotation = true;
-        public float maxStepDistance = 1f;
 
+        // In progress, ground enemy stepping
+        private float maxStepDistance = 1f;
+
+        /// <summary> 
+        /// The current path the agent is following, represented as a list of waypoints.   
+        /// </summary>
         public AgentPath currentPath = new AgentPath();
         private List<OctNavGraph.GraphNode> currentAStarPath = new List<OctNavGraph.GraphNode>();
 
         [Header("Functionality")]
         public bool isPaused { get; private set; } = false;
         public bool isMoving { get; private set; } = false;
-        private Vector3? manualDestination = null;
-        public Vector3? currentGoal => manualDestination.HasValue ? manualDestination : target != null ? (Vector3?)target.position : null;
-        public Vector3? nextGoal = null;
+
+        [Tooltip("Callback when the agent reaches its destination.")]
         public event Action OnDestinationReached;
+        [Tooltip("Callback when the agent updates its path.")]
         public event Action<List<Vector3>> OnPathUpdated;
+
         [Header("Utils")]
+        [Tooltip("The layer mask used for raycasting and collision detection.")]
         public LayerMask layerMask = ~0;
-        public bool rotationFrozen = false;
+        [Tooltip("Draws debug information in the scene view.")]
+        public bool drawDebug = true;
+
 
         [HideInInspector] public int currentWaypoint;
-
+       
         private Vector3 lastForward;
         private OctNode currentNode;
 
@@ -138,7 +161,7 @@ namespace OctNav
             }
             if (!isMoving || isPaused)
             {
-                //ApplyStoppingForce();
+                ApplyStoppingForce();
                 return;
             }
 
@@ -271,7 +294,6 @@ namespace OctNav
             if (angleToDesired > snapTurnAngleThreshold)
             {
                 effectiveTurnSpeed *= snapTurnAdditionalFactor;
-                Debug.Log($"[Turn Debug] Applying AGGRESSIVE Turn Boost! Angle: {angleToDesired:F2} deg. New Effective Turn Speed: {effectiveTurnSpeed:F2}");
             }
 
 
@@ -285,24 +307,12 @@ namespace OctNav
             // Calculate the ACTUAL turn rate in degrees per second
             float turnRateDegPerSec = actualTurnAngleThisFrame * (1  / Time.deltaTime);
 
-            // Debugging for turn calculation
-            Debug.Log($"[Turn Debug] Current Velocity Magnitude: {currentVelocity.magnitude:F2}");
-            Debug.Log($"[Turn Debug] Turn Speed Boost Factor (Vel): {turnSpeedBoost:F2}");
-            Debug.Log($"[Turn Debug] Effective Turn Speed (Pre-Aggro): {turnSpeed * turnSpeedBoost:F2}");
-            Debug.Log($"[Turn Debug] Effective Turn Speed (Post-Aggro): {effectiveTurnSpeed:F2}");
-            Debug.Log($"[Turn Debug] Angle to Desired: {angleToDesired:F2} deg");
-            Debug.Log($"[Turn Debug] Max Turn This Frame: {maxTurnThisFrame:F2} deg");
-            Debug.Log($"[Turn Debug] Actual Turn Angle This Frame: {actualTurnAngleThisFrame:F2} deg");
-            Debug.Log($"[Turn Debug] Turn Rate (Deg/Sec): {turnRateDegPerSec:F2}");
-
-            // Sample the AnimationCurve to get the speed multiplier
             // This curve still dictates how velocity is affected by the actual turning rate.
             float turnSpeedMultiplier = Mathf.Clamp01(turnRateToSpeed.Evaluate(turnRateDegPerSec));
-            Debug.Log($"[Turn Debug] Turn Speed Multiplier: {turnSpeedMultiplier:F2}");
 
 
-            // Handle slopes if walking and on ground
-            if (walking && isOnGround)
+            // Handle slopes if walking and on ground, in progress.
+            /*if (walking && isOnGround)
             {
                 RaycastHit hit;
                 if (Physics.Raycast(transform.position, Vector3.down, out hit, groundCheckDistance * 2f))
@@ -323,7 +333,7 @@ namespace OctNav
                         }
                     }
                 }
-            }
+            }*/
 
             // Determine the actual movement direction considering turn limitations
             Vector3 movementDir;
@@ -382,11 +392,19 @@ namespace OctNav
             // Apply linear velocity to Rigidbody
             if (walking && isOnGround)
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
+#else
+                rb.velocity = new Vector3(currentVelocity.x, rb.velocity.y, currentVelocity.z);
+#endif
             }
             else
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = currentVelocity;
+#else
+                rb.velocity = currentVelocity;
+#endif
             }
 
             // Handle agent's rotation
@@ -470,18 +488,30 @@ namespace OctNav
         private void ApplyStoppingForce()
         {
 
-           if (walking && isOnGround)
+           if (rb != null && walking && isOnGround)
            {
-               rb.linearVelocity = new Vector3(
+#if UNITY_6000_0_OR_NEWER
+                rb.linearVelocity = new Vector3(
                    Mathf.Lerp(rb.linearVelocity.x, 0f, deceleration * Time.fixedDeltaTime),
                    rb.linearVelocity.y,
                    Mathf.Lerp(rb.linearVelocity.z, 0f, deceleration * Time.fixedDeltaTime)
-               );
-           }
-           else
-           {
+                );
+#else
+                rb.velocity = new Vector3(
+                   Mathf.Lerp(rb.velocity.x, 0f, deceleration * Time.fixedDeltaTime),
+                   rb.velocity.y,
+                   Mathf.Lerp(rb.velocity.z, 0f, deceleration * Time.fixedDeltaTime)
+                );
+#endif
+            }
+            else
+            {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, deceleration * Time.fixedDeltaTime);
-           }
+#else
+                rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, deceleration * Time.fixedDeltaTime);
+#endif
+            }
         }
 
         /// <summary>
@@ -539,7 +569,7 @@ namespace OctNav
         /// <summary>
         /// Sets a new movement target using a Transform. Resets destination and forces a new path if the graph is valid.
         /// </summary>
-        /// <param name="newTarget">The target Transform to follow. Can be null to clear the target.</param>
+        /// <param name="newTarget">The target Transform to follow. If null defaults to agents current target.</param>
         public void SetTarget(Transform newTarget = null)
         {
             straightPath = false;
@@ -692,7 +722,6 @@ namespace OctNav
             isPaused = true;
             cashedVelocity = currentVelocity;
             cashedAngularVelocity = rb.angularVelocity;
-            rotationFrozen = true;
             ZeroVelocity();
         }
 
@@ -705,8 +734,17 @@ namespace OctNav
             isPaused = false;
             currentVelocity = cashedVelocity;
             rb.angularVelocity = cashedAngularVelocity;
-            rotationFrozen = false;
-            if (rb != null) rb.linearVelocity = cashedVelocity;
+#if UNITY_6000_0_OR_NEWER
+            if (rb != null)
+            {
+                rb.linearVelocity = cashedVelocity;
+            }
+#else
+            if (rb != null)
+            {
+                rb.velocity = cashedVelocity;
+            }
+#endif
         }
 
         public class PathSubscription : IDisposable
@@ -742,7 +780,6 @@ namespace OctNav
                 Debug.LogWarning("Nno target or destination set");
                 return null;
             }
-            rotationFrozen = false;
             isPaused = false;
             isMoving = true;
             ForceRepath();
@@ -753,10 +790,10 @@ namespace OctNav
         /// Clears all current pathfinding data including raw and smoothed paths,
         /// portals, and resets the waypoint index.
         /// </summary>
-        private void ClearPath()
+        public void ClearPath()
         {
-            currentPath.Clear();
-            currentAStarPath.Clear();
+            currentPath = new AgentPath();
+            currentAStarPath = new List<OctNavGraph.GraphNode>();
             viaPoints.Clear();
             portals.Clear();
             currentWaypoint = 0;
@@ -770,7 +807,11 @@ namespace OctNav
             currentVelocity = Vector3.zero;
             if (rb != null)
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = Vector3.zero;
+#else
+                rb.velocity = Vector3.zero;
+#endif
                 rb.angularVelocity = Vector3.zero;
             }
         }
@@ -788,14 +829,7 @@ namespace OctNav
             OnPathUpdated?.Invoke(currentPath.waypoints);
         }
 
-        /// <summary>
-        /// Resets the path objects without triggering a full re-path or recalculation.
-        /// </summary>
-        public void ResetPath()
-        {
-            currentPath = new AgentPath();
-            currentAStarPath = new List<OctNavGraph.GraphNode>();
-        }
+      
 
         /// <summary>
         /// Builds a smoothed movement path using portal-based navigation and Catmull-Rom interpolation.
@@ -864,11 +898,7 @@ namespace OctNav
         /// </summary>
         public AgentPath BuildSmoothedPathPhysics(List<OctNavGraph.GraphNode> rawPath, Vector3 finalTarget, int subdivs = 8)
         {
-            if (walking)
-            {
-                return BuildSmoothedPath(rawPath, finalTarget);
-            }
-
+    
             List<Vector3> points = new List<Vector3> { transform.position };
             AgentPath path = new AgentPath();
             points.AddRange(rawPath.Select(n => n.center));
@@ -1083,6 +1113,8 @@ namespace OctNav
 
         private void OnDrawGizmosSelected()
         {
+
+            if (!drawDebug) return;
             Gizmos.color = OctColour.Chartreuse.Color();
             Gizmos.DrawWireSphere(transform.position, accuracy);
 
@@ -1099,10 +1131,10 @@ namespace OctNav
                 }
 
                 Gizmos.color = OctColour.Teal.Color();
-                Gizmos.DrawWireSphere(GetPathNode(0).bounds.center, 2f);
+                Gizmos.DrawWireSphere(GetPathNode(0).bounds.center, 0.5f);
 
                 Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(GetPathNode(GetAStarPathLength() - 1).bounds.center, 2f);
+                Gizmos.DrawWireSphere(GetPathNode(GetAStarPathLength() - 1).bounds.center, 0.5f);
             }
 
             if (currentGoal != null)
@@ -1116,7 +1148,7 @@ namespace OctNav
                 Gizmos.color = Color.cyan;
                 foreach (Vector3 p in viaPoints)
                 {
-                    Gizmos.DrawSphere(p, 0.7f);
+                    Gizmos.DrawSphere(p, 0.1f);
                 }
             }
 
@@ -1138,7 +1170,7 @@ namespace OctNav
                         Gizmos.color = Color.white;
                     }
                     Vector3 wp = currentPath[i];
-                    Gizmos.DrawSphere(wp, 0.15f);
+                    Gizmos.DrawSphere(wp, 0.05f);
 
                     if (i < currentPath.Length - 1)
                     {

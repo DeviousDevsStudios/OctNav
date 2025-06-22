@@ -4,7 +4,7 @@ namespace OctNav
 {
     [CustomEditor(typeof(OctAgent))]
     [CanEditMultipleObjects]
-    public class OctNavigationAgentEditor : Editor
+    public class OctAgentEditor : Editor
     {
         public override void OnInspectorGUI()
         {
@@ -30,7 +30,7 @@ namespace OctNav
             EditorGUILayout.Space();
             if (GUILayout.Button("Reset Path"))
             {
-                agentRef.ResetPath();
+                agentRef.ClearPath();
             }
         }
     }
