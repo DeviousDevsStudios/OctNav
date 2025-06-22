@@ -16,9 +16,9 @@ namespace OctNav
         [Header("Settings")]
         public LayerMask geometryMask = ~0;
         public int maxDepth = 5;
-        public float toleranceForFittingCubes = 0.5f;
         [Tooltip("If you're not using convex shapes there will be nodes AI will try to path to inside geometry, turning this on fixes this.")]
         public bool performCulling = false;
+
         [Header("Gizmos")]
         public bool drawGizmosOnlyWhenSelected = false;
         public bool showHitGizmos = false;
@@ -27,7 +27,7 @@ namespace OctNav
         public bool drawGraph = false;
         public bool drawGroundedGraph = false;
         public bool showEmptyLeavesGizmos = false;
-        public bool selectionMode = false;
+        [HideInInspector] public bool selectionMode = false;
         public bool enableDistanceFade = false;
         public float fadeStartDistance = 100;
         public float fadeEndDistance = 200;
@@ -44,9 +44,11 @@ namespace OctNav
         List<OctNode> culledNodes = new List<OctNode>();
         private Vector3 sceneCamPos;
         private List<Collider> surfaceObjects;
-        private float biggestSide;
+        private float biggestSide = 10;
         private Bounds RootBounds;
 
+        [Tooltip("Size of smallest octree node.")]
+        public float minScale => biggestSide / maxDepth;
         public static string OctreeSaveDirectory => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "SceneData", "OctreeData");
         public string SavePath => Path.Combine(OctreeSaveDirectory, $"{gameObject.scene.name}_{gameObject.name}.json");
 
@@ -113,7 +115,6 @@ namespace OctNav
         /// </summary>
         public void Build()
         {
-            Profiler.BeginSample("Clean");
             float startTime = Time.realtimeSinceStartup;
             ResetOctree();
 
@@ -137,19 +138,13 @@ namespace OctNav
             CollectAllNodes(root);
             BuildWalkableGraph();
 
-            Debug.Log($"[OctNav] Volume build: {Time.realtimeSinceStartup - startTime:F6}s | Empty nodes: {emptyLeaves.Count} | Culled: {culled}");
 #if UNITY_EDITOR 
+            Debug.Log($"[OctNav] Volume build: {Time.realtimeSinceStartup - startTime:F6}s | Empty nodes: {emptyLeaves.Count} | Culled: {culled}");
+            SceneView.RepaintAll();
 #endif
+
+
             SaveOctree();
-
-
-            //finally
-            //{
-            //    foreach (var kvp in originalConvexStates)
-            //        kvp.Key.convex = kvp.Value;
-            //}
-            Profiler.EndSample();
-            Profiler.enabled = false;
         }
 
         /// <summary>

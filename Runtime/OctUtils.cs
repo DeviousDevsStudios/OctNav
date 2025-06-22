@@ -1,7 +1,77 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace OctNav {
+
+
+    /// <summary>
+    /// Represents a dynamic target that can reference either a Transform or a static Vector3 position.
+    /// If a Transform is assigned, its current world position is used; otherwise, a cached position is used.
+    /// Provides seamless conversion between Transform, Vector3, and tuple types for flexible usage in navigation and AI systems.
+    /// Supports addition, subtraction, and equality operators for target manipulation.
+    /// </summary>
+    [Serializable]
+    public class Target
+    {
+        [Tooltip("Target transform, if null, position will be used instead")]
+        public Transform transform;
+        [Tooltip("Cashed position, refer to currentPosition instead")]
+        public Vector3 position;
+        public Vector3? currentPosition => transform != null ? transform.position : position;
+
+        public Target(Transform targetTransform)
+        {
+            this.transform = targetTransform;
+            this.position = targetTransform.position;
+        }
+        public Target(Vector3 targetPoint)
+        {
+            this.position = targetPoint;
+            this.transform = null;
+        }
+        public Target(Vector3 targetPoint, Transform targetTransform)
+        {
+            this.transform = targetTransform;
+            this.position = targetPoint;
+        }
+        //get
+        public static implicit operator Transform(Target t) => t.transform;
+        //set
+        public static implicit operator Target(Transform t) => new Target(t);
+        //get
+        public static implicit operator Vector3?(Target t) => t.currentPosition;
+        //set 
+        public static implicit operator Target(Vector3 t) => new Target(t);
+        //get
+        public static implicit operator (Vector3 position, Transform transform)(Target t) => (t.position, t.transform);
+        //set
+        public static implicit operator Target((Vector3 position, Transform transform) tuple) => new Target(tuple.position, tuple.transform);
+
+        public static Target operator +(Target a, Target b)
+        {
+            Vector3 posA = a?.currentPosition ?? Vector3.zero;
+            Vector3 posB = b?.currentPosition ?? Vector3.zero;
+            return new Target(posA + posB);
+        }
+        public static Target operator -(Target a, Target b)
+        {
+            Vector3 posA = a?.currentPosition ?? Vector3.zero;
+            Vector3 posB = b?.currentPosition ?? Vector3.zero;
+            return new Target(posA - posB);
+        }
+        public static bool operator ==(Target a, Target b)
+        {
+            if (a is null && b is null) return true;
+            if (a is null || b is null) return false;
+            return a.currentPosition == b.currentPosition && a.transform == b.transform;
+        }
+        public static bool operator !=(Target a, Target b) => !(a == b);
+        public override bool Equals(object obj) => obj is Target t && this == t;
+        public override int GetHashCode() => (currentPosition, transform).GetHashCode();
+
+    }
+
     public enum OctColour
     {
         VibrantRed = 0,
@@ -190,6 +260,7 @@ namespace OctNav {
         /// <param name="a">The first bounding box.</param>
         /// <param name="b">The second bounding box.</param>
         /// <returns>A list of 4 corner points defining the portal, or null if no valid portal exists.</returns>
+
         private static List<Vector3> GetTouchingPortal(Bounds a, Bounds b)
         {
             const float epsilon = 0.001f;

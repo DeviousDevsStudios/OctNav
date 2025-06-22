@@ -7,7 +7,7 @@
 
 # Octree Navigation
 
-Install from package manager in Unity with `https://github.com/TheosCreation/OctNav.git`
+Install from package manager in Unity with `https://github.com/DeviousDevsStudios/OctNav.git`
 
 ## OctAgent Class Example
 
