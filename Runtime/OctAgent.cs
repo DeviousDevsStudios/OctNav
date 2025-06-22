@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using OctNav;
 
 namespace OctNav
 {
@@ -382,11 +381,19 @@ namespace OctNav
             // Apply linear velocity to Rigidbody
             if (walking && isOnGround)
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
+#else
+                rb.velocity = new Vector3(currentVelocity.x, rb.velocity.y, currentVelocity.z);
+#endif
             }
             else
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = currentVelocity;
+#else
+                rb.velocity = currentVelocity;
+#endif
             }
 
             // Handle agent's rotation
@@ -470,18 +477,30 @@ namespace OctNav
         private void ApplyStoppingForce()
         {
 
-           if (walking && isOnGround)
+           if (rb != null && walking && isOnGround)
            {
-               rb.linearVelocity = new Vector3(
+#if UNITY_6000_0_OR_NEWER
+                rb.linearVelocity = new Vector3(
                    Mathf.Lerp(rb.linearVelocity.x, 0f, deceleration * Time.fixedDeltaTime),
                    rb.linearVelocity.y,
                    Mathf.Lerp(rb.linearVelocity.z, 0f, deceleration * Time.fixedDeltaTime)
-               );
-           }
-           else
-           {
+                );
+#else
+                rb.velocity = new Vector3(
+                   Mathf.Lerp(rb.velocity.x, 0f, deceleration * Time.fixedDeltaTime),
+                   rb.velocity.y,
+                   Mathf.Lerp(rb.velocity.z, 0f, deceleration * Time.fixedDeltaTime)
+                );
+#endif
+            }
+            else
+            {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, deceleration * Time.fixedDeltaTime);
-           }
+#else
+                rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, deceleration * Time.fixedDeltaTime);
+#endif
+            }
         }
 
         /// <summary>
@@ -706,7 +725,17 @@ namespace OctNav
             currentVelocity = cashedVelocity;
             rb.angularVelocity = cashedAngularVelocity;
             rotationFrozen = false;
-            if (rb != null) rb.linearVelocity = cashedVelocity;
+#if UNITY_6000_0_OR_NEWER
+            if (rb != null)
+            {
+                rb.linearVelocity = cashedVelocity;
+            }
+#else
+            if (rb != null)
+            {
+                rb.velocity = cashedVelocity;
+            }
+#endif
         }
 
         public class PathSubscription : IDisposable
@@ -770,7 +799,11 @@ namespace OctNav
             currentVelocity = Vector3.zero;
             if (rb != null)
             {
+#if UNITY_6000_0_OR_NEWER
                 rb.linearVelocity = Vector3.zero;
+#else
+                rb.velocity = Vector3.zero;
+#endif
                 rb.angularVelocity = Vector3.zero;
             }
         }
