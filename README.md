@@ -46,8 +46,8 @@ _The OctNav Window - Gizmos Tab_
 | **Show Octree** | Toggles the visibility of the octree structure in the Scene view. |
 | **Show Empty Leaves** | Displays octree leaves that contain no navigation data. |
 | **Show Collision Leaves** | Highlights octree leaves that represent collision geometry. |
-| **Draw A* Graph** | Visualizes the entire A* graph generated for pathfinding. |
-| **Draw Grounded A* Graph** | Shows the A* graph specifically for grounded paths. |
+| **Draw A\* Graph** | Visualizes the entire A* graph generated for pathfinding. |
+| **Draw Grounded A\* Graph** | Shows the A* graph specifically for grounded paths. |
 | **Show Surface Objects** | Renders objects recognized as navigation surfaces. |
 | **Enable Distance Fade** | Fades out gizmos based on their distance from the camera for better clarity. |
 | **Enable Selection Mode** | Allows selection of individual octree nodes in the Scene view. |
@@ -110,21 +110,25 @@ public class MyBuilderScript : MonoBehaviour
 
 This section documents all public functions available in the `OctBuilder` class.
 
-**Function Signature**
 
-**Description**
+| **Function Signature** | **Description** | **Parameters** | **Example Usage** |
+|--|--|--|--|
+| `Build()` | Triggers the navigation graph build process using the bounds defined by the attached `BoundsHandles` component. This function initiates the creation of the octree-based navigation graph within the specified area. | None | `csharp public OctBuilder builder; // Assign this in the Unity Editor void Start() {	builder.Build();	Debug.Log("Navigation graph build initiated."); } ` |
 
-**Parameters**
 
-**Example Usage**
 
-`Build()`
 
-Triggers the navigation graph build process using the bounds defined by the attached `BoundsHandles` component. This function initiates the creation of the octree-based navigation graph within the specified area.
 
-None
 
-`csharp public OctBuilder builder; // Assign this in the Unity Editor void Start() { builder.Build(); Debug.Log("Navigation graph build initiated."); }`
+
+
+
+
+
+
+
+
+
 
 
 ![OctVolume](https://github.com/DeviousDevsStudios/OctNav/blob/main/SampleImages/OctVolume.png?raw=true)
@@ -308,6 +312,8 @@ public void Update()
     // The agent will continuously try to pathfind to this transform's position.
     agent.SetTarget(player);
 }
+```
+
 ```csharp
 public void Start()
 {
