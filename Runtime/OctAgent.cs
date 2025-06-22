@@ -161,7 +161,7 @@ namespace OctNav
             }
             if (!isMoving || isPaused)
             {
-                //ApplyStoppingForce();
+                ApplyStoppingForce();
                 return;
             }
 
