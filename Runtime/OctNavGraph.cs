@@ -26,7 +26,7 @@ namespace OctNav
 
         private readonly Dictionary<OctNode, OctVolume> nodeToVolumeMap = new Dictionary<OctNode, OctVolume>();
 
-        public int maxIterations = 500; //500 is alot we should see numbers from 30-200
+        public int maxIterations = 10000;
         public HeuristicType heuristicType;
         int count = 0;
 
