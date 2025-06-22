@@ -6,9 +6,9 @@ OctNav is a powerful Unity tool for efficient navigation and pathfinding within 
 ## Installation
 
 Install OctNav from the Unity Package Manager using the following Git URL:
-
-[https://github.com/DeviousDevsStudios/OctNav.git](https://github.com/DeviousDevsStudios/OctNav.git)
-
+```none
+https://github.com/DeviousDevsStudios/OctNav.git
+```
 
 
 ## 1. OctNav Window
