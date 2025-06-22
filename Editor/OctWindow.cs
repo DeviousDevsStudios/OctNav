@@ -118,6 +118,14 @@ namespace OctNav
             }
             #endregion
 
+            Button RefreshVolumeButton = new Button(() =>
+            {
+                allVolumes = new List<OctVolume>(FindObjectsByType<OctVolume>(FindObjectsSortMode.InstanceID));
+                RefreshAllPanels();
+            })
+            { text = "Refresh" };
+            rootVisualElement.Add(RefreshVolumeButton);
+
             if (allVolumes == null || allVolumes.Count == 0)
             {
                 Label noVolumeLabel = new Label("No OctVolume found in scene.\nClick below to create one.")
@@ -146,13 +154,7 @@ namespace OctNav
 
                 return;
             }
-            Button RefreshVolumeButton = new Button(() =>
-            {
-                allVolumes = new List<OctVolume>(FindObjectsByType<OctVolume>(FindObjectsSortMode.InstanceID));
-                RefreshAllPanels();
-            })
-            { text = "Refresh" };
-            rootVisualElement.Add(RefreshVolumeButton);
+  
 
 
             #region Volume Selector
